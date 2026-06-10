@@ -12,8 +12,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: true
 
       - name: Install dependencies
         run: |
@@ -22,13 +20,27 @@ jobs:
             cmake \
             build-essential \
             libcurl4-openssl-dev \
-            libsqlite3-dev
+            libsqlite3-dev \
+            python3
+
+      - name: Fetch Unity
+        run: |
+          mkdir -p external
+          git clone --depth 1 https://github.com/ThrowTheSwitch/Unity.git external/unity
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 
       - name: Build
         run: cmake --build build
+
+      - name: Start local test server
+        run: |
+          mkdir -p /tmp/fuckman-test-server
+          echo "fuckman test server" > /tmp/fuckman-test-server/index.html
+          cd /tmp/fuckman-test-server
+          python3 -m http.server 8080 --bind 127.0.0.1 &
+          sleep 1
 
       - name: Test
         run: ctest --test-dir build --output-on-failure
