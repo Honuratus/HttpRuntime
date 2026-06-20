@@ -3,7 +3,8 @@
 #include "orchestrator.h"
 #include "db_manager.h"
 
-int run_get_command(const char* url, const Assertion* as){
+
+int run_get_command(const CliOptions* options){
     int rc = 0;
     int exit_code = -1;
 
@@ -13,7 +14,7 @@ int run_get_command(const char* url, const Assertion* as){
     Request* req = NULL;
     WorkerTask* task = NULL;
 
-    if (!url || *url == '\0') {
+    if (!options->url || *options->url == '\0') {
         printf("URL is required.\n");
         goto cleanup;
     }
@@ -45,7 +46,7 @@ int run_get_command(const char* url, const Assertion* as){
     req = create_request(
         GET,
         coll->id,
-        url,
+        options->url,
         NULL,
         NULL,
         0
@@ -91,13 +92,23 @@ int run_get_command(const char* url, const Assertion* as){
     
     exit_code = 0;
 
-    if(as){
+    if (options->assertion_count > 0){
         printf("\nAssertions:\n");
-        AssertionResult as_result = eval_assertion(resp,as);
-        print_assertion_result(&as_result);
-        printf("\nAssertion Result: %s\n", as_result.passed ? "PASS" : "FAIL");
-        exit_code = as_result.passed ? 0 : 1;
+
+        int all_passed = 1;
+
+        for (size_t i = 0; i < options->assertion_count; i++){
+            AssertionResult as_result = eval_assertion(resp, &options->assertions[i]);
+            print_assertion_result(&as_result);
+
+            if(!as_result.passed)
+                all_passed = 0;
+        }
+
+        printf("\nAssertion Result: %s\n", all_passed ? "PASS" : "FAIL");
+        exit_code = all_passed ? 0 : 1;
     }
+    
 
 
 cleanup:
