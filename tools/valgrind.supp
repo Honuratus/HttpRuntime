@@ -1,0 +1,9 @@
+{
+   libp11-kit-newlocale-leak
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:realloc
+   fun:argz_add_sep
+   fun:newlocale
+   obj:/usr/lib/x86_64-linux-gnu/libp11-kit.so*
+}
