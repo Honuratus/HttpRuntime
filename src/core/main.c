@@ -42,13 +42,7 @@ int main(int argc, char** argv){
     }
 
     // GET COMMAND
-    if(strcmp("GET", options.command) == 0){
-        result = run_get_command(&options);
-    } else {
-        printf("Unsupported command: %s\n", options.command);
-        print_usage(argv[0]);
-        result = -1;
-    }
+    result = run_command(&options);
 
 cleanup:
     free_cli_options(&options);

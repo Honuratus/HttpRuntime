@@ -125,3 +125,15 @@ cleanup:
 
     return exit_code;
 }
+
+int run_command(const CliOptions* options){
+    int result = -1;
+
+    if(strcmp("GET", options->command) == 0){
+        result = run_get_command(options);
+    } else {
+        printf("Unsupported command: %s\n", options->command);
+    }
+
+    return result;
+}

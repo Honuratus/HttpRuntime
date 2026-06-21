@@ -5,6 +5,6 @@
 #include "cli_output.h"
 #include "cli_parser.h"
 
-int run_get_command(const CliOptions* options);
+int run_command(const CliOptions* options);
 
 #endif
