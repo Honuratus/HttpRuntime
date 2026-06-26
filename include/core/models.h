@@ -105,6 +105,11 @@ WorkerTask* create_http_worker_task(Request* req);
 const char* response_result_to_char(ResponseResults rr);
 
 
+void free_request(Request* req);
+void free_collection(Collection* coll);
+void free_response(Response* resp);
+
+
 #endif
 
 

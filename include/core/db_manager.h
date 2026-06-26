@@ -24,9 +24,6 @@ int db_close();
 int db_clear_all();
 
 
-void free_request(Request* req);
-void free_collection(Collection* coll);
-void free_response(Response* resp);
 
 
 #endif

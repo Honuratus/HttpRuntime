@@ -348,31 +348,9 @@ static Response* map_row_to_response(sqlite3_stmt* stmt){
 }
 
 
-void free_request(Request* req) {
-    if (!req) return; 
-    
-    if (req->url) free(req->url);
-    if (req->headers) free(req->headers);
-    if (req->body) free(req->body);
-    
-    free(req);
-}
 
-void free_response(Response* resp){
-    if(!resp) return;
-    if(resp->body) free(resp->body);
-    if(resp->headers) free(resp->headers);
-    if(resp->content_type) free(resp->content_type);
 
-    free(resp);
-}
 
-void free_collection(Collection* coll){
-    if(!coll) return;
-
-    if(coll->name) free(coll->name);
-    free(coll);
-}
 
 Request* db_get_next_pending_request(){
     sqlite3_stmt* stmt = NULL;
