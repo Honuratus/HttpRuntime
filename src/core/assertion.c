@@ -34,16 +34,6 @@ static bool check_equal(Value val1, Value val2){
     return false;
 }
 
-// for strings
-static bool check_contains(Value str, Value substr){
-    if (str.type != VALUE_STRING || substr.type != VALUE_STRING)
-        return false;
-    
-    if (!str.as.string_value || !substr.as.string_value)
-            return false;
-    
-    return strstr(str.as.string_value, substr.as.string_value) != NULL;
-}
 
 static bool bytes_contains(Value haystack, Value needle)
 {
@@ -106,7 +96,7 @@ static const char *rtrim_end(const char *start, const char *end)
     return end;
 }
 
-bool header_contains(const char *headers, HeaderExpect expected)
+static bool header_contains(const char *headers, HeaderExpect expected)
 {
     if (!headers || !expected.name || !expected.value)
         return false;

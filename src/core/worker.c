@@ -36,9 +36,9 @@ static void push_response_or_free(Runtime* o, Response** response_ptr)
     *response_ptr = NULL;
 }
 
-bool set_curl_method(CURL* curl, Request* req);
-struct curl_slist* set_curl_headers(CURL* curl, const char* headers); 
-struct curl_slist* parse_headers(const char* h);
+static bool set_curl_method(CURL* curl, Request* req);
+static struct curl_slist* set_curl_headers(CURL* curl, const char* headers); 
+static struct curl_slist* parse_headers(const char* h);
 
 
 size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
@@ -361,7 +361,7 @@ void* db_worker_routine(void* arg) {
     return NULL;
 }
 
-bool set_curl_method(CURL* curl, Request* req){
+static bool set_curl_method(CURL* curl, Request* req){
     int rc = CURLE_OK;
     if (!curl || !req) return false; // Güvenlik kontrolü
 
@@ -432,7 +432,7 @@ bool set_curl_method(CURL* curl, Request* req){
     return true;
 }
 
-struct curl_slist* set_curl_headers(CURL* curl, const char* headers){
+static struct curl_slist* set_curl_headers(CURL* curl, const char* headers){
     if(!headers)
         return NULL;
     struct curl_slist* header_list = parse_headers(headers);
@@ -447,7 +447,7 @@ struct curl_slist* set_curl_headers(CURL* curl, const char* headers){
     return header_list;
 }
 
-struct curl_slist* parse_headers(const char* h){
+static struct curl_slist* parse_headers(const char* h){
     char* headers = strdup(h); // stringi kopyala
 
     if(!headers)
