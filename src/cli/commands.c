@@ -75,6 +75,39 @@ static int cli_options_to_run_plan(const CliOptions *options, RunPlan *plan)
 
     for (size_t i = 0; i < options->assertion_count; i++) {
         request_case->assertions[i] = options->assertions[i];
+
+
+        switch (request_case->assertions[i].type) {
+            case ASSERT_BODY_CONTAINS:
+                if (options->assertions[i].expected.as.string_value) {
+                    size_t data_len = options->assertions[i].expected.as.byte_value.len; 
+                    request_case->assertions[i].expected.as.string_value = malloc(data_len);
+                    
+                    if (request_case->assertions[i].expected.as.string_value) {
+                        memcpy(request_case->assertions[i].expected.as.string_value, 
+                            options->assertions[i].expected.as.string_value, 
+                            data_len);
+                    }
+                }
+                break;
+
+            case ASSERT_HEADER_CONTAINS:
+                if (options->assertions[i].expected.as.header_value.name) {
+                    request_case->assertions[i].expected.as.header_value.name = 
+                        strdup(options->assertions[i].expected.as.header_value.name);
+                }
+                if (options->assertions[i].expected.as.header_value.value) {
+                    request_case->assertions[i].expected.as.header_value.value = 
+                        strdup(options->assertions[i].expected.as.header_value.value);
+                }
+                break;
+
+            case ASSERT_STATUS_EQ:
+                break;
+                
+            default:
+                break;
+        }
     }
 
     return 0;

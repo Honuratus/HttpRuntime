@@ -93,17 +93,15 @@ static int run_bench(size_t request_count, size_t worker_count)
     return rc;
 }
 
-int main(void)
+int main(int argc,char** argv)
 {
-    size_t request_count = 20;
+    if (argc < 3) return 0;
+    size_t request_count = atoi(argv[1]);
 
     printf("RunPlan parallel benchmark\n");
     printf("Each request sleeps ~200ms on local threaded server\n\n");
 
-    run_bench(request_count, 1);
-    run_bench(request_count, 2);
-    run_bench(request_count, 4);
-    run_bench(request_count, 8);
+    run_bench(request_count, atoi(argv[2]));
 
     return 0;
 }

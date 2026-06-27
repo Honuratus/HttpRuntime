@@ -39,6 +39,37 @@ void free_run_plan(RunPlan *plan)
         request_case->body = NULL;
         request_case->body_len = 0;
 
+        for (size_t j = 0; j < request_case->assertion_count; j++) {
+            Assertion *assertion = &request_case->assertions[j];
+
+            switch (assertion->type) {
+                case ASSERT_BODY_CONTAINS:
+                    if (assertion->expected.as.string_value) {
+                        free(assertion->expected.as.string_value);
+                        assertion->expected.as.string_value = NULL;
+                    }
+                    break;
+
+                case ASSERT_HEADER_CONTAINS:
+                    if (assertion->expected.as.header_value.name) {
+                        free(assertion->expected.as.header_value.name);
+                        assertion->expected.as.header_value.name = NULL;
+                    }
+                    if (assertion->expected.as.header_value.value) {
+                        free(assertion->expected.as.header_value.value);
+                        assertion->expected.as.header_value.value = NULL;
+                    }
+                    break;
+
+                case ASSERT_STATUS_EQ:
+                    // Status kodu için memory allocation yok (VALUE_INT), bir şey yapmaya gerek yok.
+                    break;
+                
+                default:
+                    break;
+            }
+        }
+
         request_case->assertion_count = 0;
     }
 
