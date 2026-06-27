@@ -19,6 +19,8 @@ set(CORE_SOURCES
     src/core/models.c
     src/core/logger.c
     src/core/assertion.c
+    src/core/run_plan.c
+    src/core/engine.c
 )
 
 add_library(httpruntime_core STATIC

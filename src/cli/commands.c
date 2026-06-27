@@ -1,139 +1,148 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "commands.h"
 
-#include "orchestrator.h"
-#include "db_manager.h"
+#include "engine.h"
+#include "run_plan.h"
+#include "models.h"
+#include "assertion.h"
+#include "cli_output.h"
 
+static char *dup_string(const char *s)
+{
+    if (!s) {
+        return NULL;
+    }
 
-int run_get_command(const CliOptions* options){
-    int rc = 0;
-    int exit_code = -1;
+    size_t len = strlen(s);
+    char *copy = malloc(len + 1);
+    if (!copy) {
+        return NULL;
+    }
 
-    Runtime* r = NULL;
-    Collection* coll = NULL;
-    Response* resp = NULL;
-    Request* req = NULL;
-    WorkerTask* task = NULL;
+    memcpy(copy, s, len + 1);
+    return copy;
+}
+
+static int cli_options_to_run_plan(const CliOptions *options, RunPlan *plan)
+{
+    if (!options || !plan) {
+        return -1;
+    }
 
     if (!options->url || *options->url == '\0') {
         printf("URL is required.\n");
-        goto cleanup;
+        return -1;
     }
 
-    rc = db_init("runner.db");
-    if (rc == SQLITE_ERROR) {
-        printf("Database initialization error.\n");
-        goto cleanup;
+    init_run_plan(plan);
+
+    plan->worker_count = 1;
+    plan->default_timeout_ms = 5000;
+    plan->save_history = true;
+    plan->db_path = dup_string("runner.db");
+    plan->collection_name = dup_string("DEFAULT");
+
+    if (!plan->db_path || !plan->collection_name) {
+        return -1;
     }
 
-    coll = create_collection("DEFAULT");
-    if (!coll) {
-        printf("Collection creation error.\n");
-        goto cleanup;
+    plan->case_count = 1;
+
+    RequestCase *request_case = &plan->cases[0];
+
+    request_case->method = GET;
+    request_case->url = dup_string(options->url);
+    request_case->headers = NULL;
+    request_case->body = NULL;
+    request_case->body_len = 0;
+    request_case->timeout_ms = 5000;
+
+    if (!request_case->url) {
+        return -1;
     }
 
-    rc = db_save_collection(coll);
-    if (rc == SQLITE_ERROR) {
-        printf("Collection db save error.\n");
-        goto cleanup;
+    if (options->assertion_count > MAX_CASE_ASSERTIONS) {
+        printf("Too many assertions. Max: %d\n", MAX_CASE_ASSERTIONS);
+        return -1;
     }
 
-    r = create_runtime(1);
-    if (!r) {
-        printf("Runtime creation error.\n");
-        goto cleanup;
+    request_case->assertion_count = options->assertion_count;
+
+    for (size_t i = 0; i < options->assertion_count; i++) {
+        request_case->assertions[i] = options->assertions[i];
     }
 
-    req = create_request(
-        GET,
-        coll->id,
-        options->url,
-        NULL,
-        NULL,
-        0
-    );
-    if (!req) {
-        printf("Create request error.\n");
-        goto cleanup;
+    return 0;
+}
+
+static void print_run_result(const RunResult *result)
+{
+    if (!result) {
+        return;
     }
 
+    for (size_t i = 0; i < result->case_result_count; i++) {
+        const RequestCaseResult *case_result = &result->case_results[i];
 
-    rc = db_save_request(req);
-    if (rc == SQLITE_ERROR) {
-        printf("SQLITE request creation error.\n");
-        goto cleanup;
-    }
-
-    int req_id = req->id;
-
-
-    task = create_http_worker_task(req);
-    if (!task) {
-        printf("Worker task creation error.\n");
-        goto cleanup;
-    }
-
-    req = NULL; // main -> orchestrator transfer
-
-    rc = dispatch_task(r, task, WORKER);
-    if (rc != ORCHESTRATOR_SUCCESS) {
-        printf("Dispatch error.\n");
-        goto cleanup;
-    }
-
-    task = NULL; // orchestrator -> runtime transfer
-
-    resp = wait_for_response(req_id, 5000);
-    if (!resp) {
-        printf("Response timeout.\n");
-        goto cleanup;
-    }
-
-    print_response_summary(resp);
-    
-    exit_code = 0;
-
-    if (options->assertion_count > 0){
-        printf("\nAssertions:\n");
-
-        int all_passed = 1;
-
-        for (size_t i = 0; i < options->assertion_count; i++){
-            AssertionResult as_result = eval_assertion(resp, &options->assertions[i]);
-            print_assertion_result(&as_result);
-
-            if(!as_result.passed)
-                all_passed = 0;
+        if (!case_result->response) {
+            printf("Request %zu failed or timed out.\n", i + 1);
+            continue;
         }
 
-        printf("\nAssertion Result: %s\n", all_passed ? "PASS" : "FAIL");
-        exit_code = all_passed ? 0 : 1;
-    }
-    
+        print_response_summary(case_result->response);
 
+        if (case_result->assertion_result_count > 0) {
+            printf("\nAssertions:\n");
+
+            for (size_t j = 0; j < case_result->assertion_result_count; j++) {
+                print_assertion_result(&case_result->assertion_results[j]);
+            }
+
+            printf("\nAssertion Result: %s\n",
+                case_result->assertions_ok ? "PASS" : "FAIL");
+        }
+    }
+}
+
+int run_get_command(const CliOptions *options)
+{
+    int exit_code = 1;
+
+    RunPlan plan;
+    RunResult result;
+
+    init_run_plan(&plan);
+    init_run_result(&result);
+
+    if (cli_options_to_run_plan(options, &plan) != 0) {
+        goto cleanup;
+    }
+
+    exit_code = run_plan(&plan, &result);
+
+    print_run_result(&result);
 
 cleanup:
-    if(resp)
-        free_response(resp);
-    if(req)
-        free_request(req);
-    if(r)
-        destroy_runtime(r);
-    if(coll)
-        free_collection(coll);
-    
-    db_close();
+    free_run_result(&result);
+    free_run_plan(&plan);
 
     return exit_code;
 }
 
-int run_command(const CliOptions* options){
-    int result = -1;
-
-    if(strcmp("GET", options->command) == 0){
-        result = run_get_command(options);
-    } else {
-        printf("Unsupported command: %s\n", options->command);
+int run_command(const CliOptions *options)
+{
+    if (!options || !options->command) {
+        printf("No command provided.\n");
+        return 1;
     }
 
-    return result;
+    if (strcmp("GET", options->command) == 0) {
+        return run_get_command(options);
+    }
+
+    printf("Unsupported command: %s\n", options->command);
+    return 1;
 }
