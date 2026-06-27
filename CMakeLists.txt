@@ -62,3 +62,15 @@ target_link_libraries(fuckman PRIVATE
 
 enable_testing()
 add_subdirectory(tests)
+
+add_executable(bench_run_plan_parallel
+    tools/bench_run_plan_parallel.c
+)
+
+target_include_directories(bench_run_plan_parallel PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/core
+)
+
+target_link_libraries(bench_run_plan_parallel PRIVATE
+    httpruntime_core
+)
