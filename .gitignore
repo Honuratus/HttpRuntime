@@ -13,3 +13,9 @@
 
 /external/
 runner.db
+
+/scripts/bench.log
+/scripts/benchmark.sh
+/scripts/benchmarkplot.py
+/scripts/time.log
+
