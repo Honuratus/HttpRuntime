@@ -7,7 +7,8 @@
 
 typedef enum {
     DSL_PARSE_OK = 0,
-    DSL_PARSE_ERROR = 1
+    DSL_PARSE_ERROR = 1,
+    DSL_IO_ERROR = 2
 } DslParseResult;
 
 typedef struct {

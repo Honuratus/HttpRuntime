@@ -9,6 +9,8 @@
 #include "models.h"
 #include "assertion.h"
 #include "cli_output.h"
+#include "dsl.h"
+
 
 static char *dup_string(const char *s)
 {
@@ -132,6 +134,36 @@ cleanup:
     return exit_code;
 }
 
+int run_run_command(const CliOptions* options){
+    int exit_code = 1;
+
+    RunPlan plan = {0};
+    RunResult result = {0};
+    DslParseError error;
+
+    exit_code = dsl_parse_run_plan_file(options->url, &plan, &error);
+
+    if (exit_code != 0) { 
+        fprintf(stderr,
+            "%s:%zu:%zu: %s\n",
+            options->url,
+            error.line,
+            error.column,
+            error.message
+        );
+        goto cleanup;
+    }
+
+    exit_code = run_plan(&plan, &result);
+
+    print_run_result(&result); 
+cleanup:
+    free_run_result(&result);
+    free_run_plan(&plan);
+    return exit_code;
+}
+
+
 int run_command(const CliOptions *options)
 {
     if (!options || !options->command) {
@@ -139,8 +171,16 @@ int run_command(const CliOptions *options)
         return 1;
     }
 
-    if (strcmp("GET", options->command) == 0) {
+    if (strcmp("get", options->command) == 0) {
         return run_get_command(options);
+    }
+
+    if (strcmp("post", options->command) == 0) {
+        return 0;
+    }
+    
+    if (strcmp("run", options->command) == 0){
+        return run_run_command(options);
     }
 
     printf("Unsupported command: %s\n", options->command);

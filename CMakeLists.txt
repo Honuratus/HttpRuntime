@@ -46,14 +46,22 @@ set(CLI_SOURCES
     src/cli/commands.c
 )
 
+set(DSL_SOURCES
+    src/dsl/dsl.c
+    src/dsl/dsl_parser.c
+    src/dsl/dsl_lexer.c
+)
+
 add_executable(fuckman
     ${CLI_SOURCES}
+    ${DSL_SOURCES}
 )
 
 target_compile_options(fuckman PRIVATE -Wall -Wextra)
 
 target_include_directories(fuckman PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/cli
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/dsl
 )
 
 target_link_libraries(fuckman PRIVATE
