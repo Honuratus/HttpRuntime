@@ -24,7 +24,7 @@ int db_init(const char* db_name){
     const char *sql = 
         "CREATE TABLE IF NOT EXISTS collections ("
         "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-        "name TEXT NOT NULL, "
+        "name TEXT NOT NULL UNIQUE, "
         "name_len INTEGER NOT NULL,"
         "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
         ");";
@@ -94,7 +94,7 @@ int db_save_collection(Collection* coll){
 
     sqlite3_stmt* stmt = NULL;
     const char* sql =
-        "INSERT INTO collections ("
+        "INSERT OR IGNORE INTO collections ("
         "name, name_len)"
         "VALUES(?,?);";
     
@@ -109,10 +109,31 @@ int db_save_collection(Collection* coll){
 
     if (sqlite3_step(stmt) != SQLITE_DONE) goto failure;
 
-    coll->id = (int)sqlite3_last_insert_rowid(db);
-    LOG_INFO("[Info] Collection saved with ID: %d\n", coll->id);
 
     sqlite3_finalize(stmt);
+    stmt = NULL;
+
+    const char* select_sql =
+        "SELECT id FROM collections WHERE name = ? LIMIT 1;";
+
+    if (sqlite3_prepare_v2(db, select_sql, -1, &stmt, NULL) != SQLITE_OK) {
+        fprintf(stderr, "sqlite3_prepare_v2 error: %s\n", sqlite3_errmsg(db));
+        return SQLITE_ERROR;
+    }
+
+    if (sqlite3_bind_text(stmt, 1, coll->name, coll->name_len, SQLITE_STATIC) != SQLITE_OK) goto failure;
+
+    int rc = sqlite3_step(stmt);
+
+    if (rc != SQLITE_ROW) {
+        goto failure;
+    }
+
+    coll->id = sqlite3_column_int(stmt, 0);
+
+    sqlite3_finalize(stmt);
+
+    LOG_INFO("[Info] Collection ready with ID: %d\n", coll->id);
     return SQLITE_OK;
 
 

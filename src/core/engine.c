@@ -35,8 +35,8 @@ int run_plan(const RunPlan *plan, RunResult *result)
         goto cleanup;
     }
 
-    const char *db_path = plan->db_path ? plan->db_path : "runner.db";
-    const char *collection_name = plan->collection_name ? plan->collection_name : "DEFAULT";
+    const char *db_path = plan->db_path ? plan->db_path : "default.db";
+    const char *collection_name = plan->collection_name ? plan->collection_name : "default";
 
     rc = db_init(db_path);
     if (rc == SQLITE_ERROR) {
