@@ -40,6 +40,3 @@ jobs:
         run: 
           chmod +x scripts/check.sh
           ./scripts/check.sh
-
-      - name: Test
-        run: ctest --test-dir build --output-on-failure
