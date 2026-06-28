@@ -24,7 +24,8 @@ typedef enum {
     DSL_TOKEN_INT,
     DSL_TOKEN_STRING,
     DSL_TOKEN_IDENT,
-    
+
+    DSL_TOKEN_BODY_RAW,    
 } DslTokenType;
 
 typedef struct {

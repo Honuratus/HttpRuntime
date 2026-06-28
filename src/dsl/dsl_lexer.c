@@ -151,7 +151,12 @@ static DslToken scan_identifier(DslLexer *lexer)
         return make_error_token("out of memory", line, column);
     }
 
-    return make_token(keyword_type(word), word, line, column);
+    DslTokenType type = keyword_type(word);
+    if (type == DSL_TOKEN_BODY_STMT){
+        lexer->read_body_raw_next = true;
+    }
+    
+    return make_token(type, word, line, column);
 }
 
 static DslToken scan_string(DslLexer *lexer)
@@ -183,6 +188,42 @@ static DslToken scan_string(DslLexer *lexer)
     return make_token(DSL_TOKEN_STRING, str, line, column);
 }
 
+static DslToken scan_body_raw(DslLexer *lexer)
+{
+    size_t line = lexer->line;
+    size_t column;
+    size_t start;
+    size_t len;
+
+    while (peek(lexer) == ' ' || peek(lexer) == '\t') {
+        advance(lexer);
+    }
+
+    start = lexer->pos;
+    column = lexer->column;
+
+    while (peek(lexer) != '\0' &&
+           peek(lexer) != '\n' &&
+           peek(lexer) != '\r') {
+        advance(lexer);
+    }
+
+    len = lexer->pos - start;
+
+    while (len > 0 &&
+          (lexer->input[start + len - 1] == ' ' ||
+           lexer->input[start + len - 1] == '\t')) {
+        len--;
+    }
+
+    char *raw = dsl_strndup(lexer->input + start, len);
+    if (!raw) {
+        return make_error_token("out of memory", line, column);
+    }
+
+    return make_token(DSL_TOKEN_BODY_RAW, raw, line, column);
+}
+
 DslLexer *dsl_create_lexer(const char *input)
 {
     if (!input) {
@@ -199,7 +240,7 @@ DslLexer *dsl_create_lexer(const char *input)
     lexer->pos = 0;
     lexer->line = 1;
     lexer->column = 1;
-
+    lexer->read_body_raw_next = false;
     return lexer;
 }
 
@@ -221,6 +262,11 @@ DslToken dsl_lexer_next_token(DslLexer *lexer)
 
     char c = peek(lexer);
 
+    if (lexer->read_body_raw_next){
+        lexer->read_body_raw_next = false;
+        return scan_body_raw(lexer);
+    }
+
     if (c == '\0') {
         return make_token(DSL_TOKEN_EOF, NULL, line, column);
     }
@@ -241,6 +287,8 @@ DslToken dsl_lexer_next_token(DslLexer *lexer)
     if (is_ident_start(c)) {
         return scan_identifier(lexer);
     }
+
+    
 
     if (c == '#') {
         while (peek(lexer) != '\0' && peek(lexer) != '\n') {

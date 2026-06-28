@@ -2,6 +2,7 @@
 #define DSL_LEXER_H
 
 #include <stddef.h>
+#include <stdbool.h>
 
 #include "dsl_token.h"
 
@@ -11,6 +12,8 @@ typedef struct {
     size_t pos;
     size_t line;
     size_t column;
+
+    bool read_body_raw_next;
 } DslLexer;
 
 DslLexer *dsl_create_lexer(const char *input);

@@ -50,7 +50,7 @@ int db_init(const char* db_name){
         "status INTEGER DEFAULT 0,"
         "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
         "CONSTRAINT fk_collection FOREIGN KEY(collection_id) REFERENCES collections(id),"
-        "CONSTRAINT uq_request_identity UNIQUE(collection_id, method, url)"
+        "CONSTRAINT uq_request_identity UNIQUE(collection_id, method, url, body)"
         ");";
 
     
@@ -221,6 +221,8 @@ failure:
 int db_save_request(Request* req){
     if(!req) return SQLITE_ERROR;
 
+   
+
     sqlite3_stmt* stmt = NULL;
     const char* sql = 
         "INSERT OR IGNORE INTO requests ("
@@ -235,14 +237,17 @@ int db_save_request(Request* req){
     }
     
 
+    const void *body_data = req->body ? req->body : "";
+    sqlite3_int64 body_len = req->body ? req->body_len : 0;
+
     if (sqlite3_bind_int(stmt, 1, req->collection_id) != SQLITE_OK) goto failure;
     if (sqlite3_bind_int(stmt, 2, req->method) != SQLITE_OK) goto failure;
     if (sqlite3_bind_text(stmt, 3, req->url, req->url_len, SQLITE_STATIC) != SQLITE_OK) goto failure;
     if (sqlite3_bind_int64(stmt, 4, req->url_len) != SQLITE_OK) goto failure;
     if (sqlite3_bind_text(stmt, 5, req->headers, req->headers_len, SQLITE_STATIC) != SQLITE_OK) goto failure;
     if (sqlite3_bind_int64(stmt, 6, req->headers_len) != SQLITE_OK) goto failure;
-    if (sqlite3_bind_blob(stmt, 7, req->body, req->body_len, SQLITE_STATIC) != SQLITE_OK) goto failure;
-    if (sqlite3_bind_int64(stmt, 8, req->body_len) != SQLITE_OK) goto failure;
+    if (sqlite3_bind_blob(stmt, 7, body_data, req->body_len, SQLITE_STATIC) != SQLITE_OK) goto failure;
+    if (sqlite3_bind_int64(stmt, 8, body_len) != SQLITE_OK) goto failure;
 
     if (sqlite3_step(stmt) != SQLITE_DONE) goto failure;
 
@@ -254,6 +259,7 @@ int db_save_request(Request* req){
         "WHERE collection_id = ? "
         "AND method = ? "
         "AND url = ? "
+        "AND body = ? "
         "LIMIT 1;";
 
 
@@ -264,6 +270,7 @@ int db_save_request(Request* req){
     if (sqlite3_bind_int(stmt, 1, req->collection_id) != SQLITE_OK) goto failure;
     if (sqlite3_bind_int(stmt, 2, req->method) != SQLITE_OK) goto failure;
     if (sqlite3_bind_text(stmt, 3, req->url, req->url_len, SQLITE_STATIC) != SQLITE_OK) goto failure;
+    if (sqlite3_bind_blob(stmt, 4, req->body, req->body_len, SQLITE_STATIC) != SQLITE_OK) goto failure;
 
     if (sqlite3_step(stmt) != SQLITE_ROW) goto failure;
 

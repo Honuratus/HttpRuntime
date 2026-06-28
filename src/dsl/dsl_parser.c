@@ -290,26 +290,19 @@ static bool parse_body_stmt(DslParser *parser, RunPlan *plan)
         return false;
     }
 
-    advance_parser(parser); /* consume BODY */
-
-    /*
-     * MVP:
-     * BODY hello
-     * BODY "{\"name\":\"batuhan\"}"
-    */
-    if (!(check(parser, DSL_TOKEN_IDENT) || check(parser, DSL_TOKEN_STRING))) {
-        parser_error(parser, "expected body value after BODY");
+    if (!consume(parser, DSL_TOKEN_BODY_STMT, "expected BODY")) {
         return false;
     }
 
-    DslToken body_token = parser->current;
-    advance_parser(parser);
+    if (!consume(parser, DSL_TOKEN_BODY_RAW, "expected body value after BODY")) {
+        return false;
+    }
 
     RequestCase *request_case = &plan->cases[plan->case_count - 1];
 
     free(request_case->body);
 
-    request_case->body = strdup(body_token.str);
+    request_case->body = strdup(parser->previous.str);
     if (!request_case->body) {
         parser_error(parser, "out of memory while copying request body");
         return false;
