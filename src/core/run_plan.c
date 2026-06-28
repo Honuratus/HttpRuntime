@@ -62,7 +62,6 @@ void free_run_plan(RunPlan *plan)
                     break;
 
                 case ASSERT_STATUS_EQ:
-                    // Status kodu için memory allocation yok (VALUE_INT), bir şey yapmaya gerek yok.
                     break;
                 
                 default:

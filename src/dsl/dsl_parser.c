@@ -461,7 +461,8 @@ static bool parse_body_assertion(DslParser *parser, RequestCase *request_case)
 
     assertion->type = ASSERT_BODY_CONTAINS;
     assertion->expected.type = VALUE_BYTES;
-    assertion->expected.as.string_value = strdup(parser->previous.str);
+    assertion->expected.as.byte_value.data = (unsigned char *)strdup(parser->previous.str);
+    assertion->expected.as.byte_value.len = strlen(parser->previous.str);
 
     if (!assertion->expected.as.string_value) {
         parser_error(parser, "out of memory while copying body assertion");
