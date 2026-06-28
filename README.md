@@ -41,13 +41,17 @@ Run the file with:
 fman run smoke.fman
 ```
 
-Both input paths produce the same internal `RunPlan`. The runtime schedules requests across worker threads, stores response metadata in SQLite, and evaluates assertions after each response is completed.
+Each parsed request is added to a `RunPlan`. When the plan contains multiple requests, FMAN schedules them across worker threads and executes them in parallel.
+
+Both CLI and DSL input paths produce the same internal `RunPlan`. CLI usage commonly creates a single-request plan, while `.fman` files are intended for multi-request runs.
 
 FMAN is implemented in ISO C99 and uses `libcurl`, `SQLite`, POSIX threads, and CMake.
 
 ## Architecture
 
 FMAN uses the same runtime path for CLI commands and `.fman` files. Input parsing is separate from execution; both inputs are converted into a `RunPlan` before scheduling.
+
+A `RunPlan` may contain one or more requests. The runtime does not execute the plan sequentially by default; requests are dispatched through a worker queue and processed by the HTTP worker pool.
 
 <table>
   <tr>
@@ -176,6 +180,8 @@ Run a DSL file:
 ```bash
 fman run smoke.fman
 ```
+
+Requests parsed from a `.fman` file are added to the same `RunPlan` and are executed by the parallel runtime.
 
 The DSL is parsed with a handwritten lexer and recursive-descent parser. Parsed DSL input is converted into the same `RunPlan` representation used by the CLI.
 
